@@ -163,7 +163,7 @@ batchSize = 50 # Batch size
 doLearningRateDecay = False # Learning rate decay
 learningRateDecayRate = 0.9 # Rate
 learningRateDecayPeriod = 1 # How many epochs after which update the lr
-validationInterval = 5 # How many training steps to do the validation
+validationInterval = 20 # How many training steps to do the validation
 
 #\\\ Save values
 writeVarValues(varsFile,
