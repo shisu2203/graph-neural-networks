@@ -241,7 +241,7 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
                 yHatTrain = modelsDict[key].archit(xTrainOrdered)
 
                 # Compute loss
-                lossValueTrain = modelsDict[key].loss(yHatTrain, yTrain)
+                lossValueTrain = modelsDict[key].loss(yHatTrain, yTrain.long())
 
                 # Compute gradients
                 lossValueTrain.backward()
@@ -304,8 +304,8 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
 
             if (epoch * nBatches + batch) % validationInterval == 0:
                 # Validation:
-                xValid, yValid = data.getSamples('valid')
-                xValid = xValid.unsqueeze(1) # Add the F dimension: B x F x N
+                xValid_all, yValid_all = data.getSamplesVal('valid',20)
+                nValBatch = len(yValid_all)
 
                 if doPrint:
                     validPreamble = ''
@@ -317,45 +317,53 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
                             validPreamble, epoch+1, batch+1))
 
                 for key in modelsDict.keys():
-                    # Set the ordering
-                    xValidOrdered = xValid[:,:,modelsDict[key].order] # BxFxN
-                    
                     # Start measuring time
                     startTime = datetime.datetime.now()
-                    
-                    # Under torch.no_grad() so that the computations carried out
-                    # to obtain the validation accuracy are not taken into
-                    # account to update the learnable parameters.
-                    with torch.no_grad():
-                        # Obtain the output of the GNN
-                        yHatValid = modelsDict[key].archit(xValidOrdered)
 
-                        # Compute loss
-                        lossValueValid = modelsDict[key].loss(yHatValid, yValid)
-                                       
-                        # Finish measuring time
-                        endTime = datetime.datetime.now()
+                    for iValBatch in range(nValBatch):
+                        xValid = xValid_all[iValBatch]
+                        yValid = yValid_all[iValBatch]
+                        xValid = xValid.unsqueeze(1) # Add the F dimension: B x F x N
+
+                        # Set the ordering
+                        xValidOrdered = xValid[:,:,modelsDict[key].order] # BxFxN
                         
-                        timeElapsed = abs(endTime - startTime).total_seconds()
+                        # Under torch.no_grad() so that the computations carried out
+                        # to obtain the validation accuracy are not taken into
+                        # account to update the learnable parameters.
+                        with torch.no_grad():
+                            # Obtain the output of the GNN
+                            yHatValid = modelsDict[key].archit(xValidOrdered)
+                            
+                            if iValBatch == 0:
+                                # Compute loss
+                                lossValueValid = modelsDict[key].loss(yHatValid, yValid.long()) / nValBatch
+                                # Compute accuracy:
+                                accValid = data.evaluate(yHatValid, yValid) / nValBatch
+                            else:
+                                # Compute loss
+                                lossValueValid += modelsDict[key].loss(yHatValid, yValid.long()) / nValBatch
+                                # Compute accuracy:
+                                accValid += data.evaluate(yHatValid, yValid) / nValBatch
 
-                        # Compute accuracy:
-                        accValid = data.evaluate(yHatValid, yValid)
+                            # # Logging values
+                            # if doLogging:
+                            #     lossValidTB[key] = lossValueValid.item()
+                            #     evalValidTB[key] = accValid.item()
+                            # # Save values
+                            # if doSaveVars:
+                            #     lossValid[key] += [lossValueValid.item()]
+                            #     evalValid[key] += [accValid.item()]
+                            #     timeValid[key] += [timeElapsed]
 
-                        # Logging values
-                        if doLogging:
-                            lossValidTB[key] = lossValueValid.item()
-                            evalValidTB[key] = accValid.item()
-                        # Save values
-                        if doSaveVars:
-                            lossValid[key] += [lossValueValid.item()]
-                            evalValid[key] += [accValid.item()]
-                            timeValid[key] += [timeElapsed]
-
-                        # Print:
-                        if doPrint:
-                            print("\t(%s) %6.4f / %7.4f - %6.4fs" % (
-                                    key, accValid, lossValueValid.item(),
-                                    timeElapsed))
+                    # Finish measuring time
+                    endTime = datetime.datetime.now()
+                    timeElapsed = abs(endTime - startTime).total_seconds()
+                    # Print:
+                    if doPrint:
+                        print("\t(%s) %6.4f / %7.4f - %6.4fs" % (
+                                key, accValid, lossValueValid.item(),
+                                timeElapsed))
 
                     # No previous best option, so let's record the first trial
                     # as the best option

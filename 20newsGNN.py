@@ -159,7 +159,7 @@ lossFunction = nn.CrossEntropyLoss() # This applies a softmax before feeding
 
 #\\\ Overall training options
 nEpochs = 80 # Number of epochs
-batchSize = 100 # Batch size
+batchSize = 50 # Batch size
 doLearningRateDecay = False # Learning rate decay
 learningRateDecayRate = 0.9 # Rate
 learningRateDecayPeriod = 1 # How many epochs after which update the lr

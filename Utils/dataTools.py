@@ -82,12 +82,65 @@ class _data:
                 # We can't return more samples than there are available
                 assert args[0] <= nSamples
                 # Randomly choose args[0] indices
-                selectedIndices = np.random.choice(nSamples, size = args[0],
-                                                   replace = False)
+                selectedIndices = np.random.choice(nSamples, size = args[0], replace = False)
                 # The reshape is to avoid squeezing if only one sample is
                 # requested
                 x = x[selectedIndices,:].reshape([args[0], x.shape[1]])
                 y = y[selectedIndices]
+            else:
+                # The fact that we put else here instead of elif type()==list
+                # allows for np.array to be used as indices as well. In general,
+                # any variable with the ability to index.
+                x = x[args[0], :]
+                # If only one element is selected, avoid squeezing. Given that
+                # the element can be a list (which has property len) or an
+                # np.array (which doesn't have len, but shape), then we can
+                # only avoid squeezing if we check that it has been sequeezed
+                # (or not)
+                if len(x.shape) == 1:
+                    x = x.reshape([1, x.shape[0]])
+                # And assign the labels
+                y = y[args[0]]
+
+        return x, y
+
+    def getSamplesVal(self, samplesType, *args):
+        # type: train, valid, test
+        # args: 0 args, give back all
+        # args: 1 arg: if int, give that number of samples, chosen at random
+        # args: 1 arg: if list, give those samples precisely.
+        # Check that the type is one of the possible ones
+        assert samplesType == 'train' or samplesType == 'valid' \
+                    or samplesType == 'test'
+        # Check that the number of extra arguments fits
+        assert len(args) <= 1
+        # If there are no arguments, just return all the desired samples
+        x = self.samples[samplesType]['signals']
+        y = self.samples[samplesType]['labels']
+        x_temp = x
+        y_temp = y
+        # If there's an argument, we have to check whether it is an int or a
+        # list
+        if len(args) == 1:
+            # If it is an int, just return that number of randomly chosen
+            # samples.
+            if type(args[0]) == int:
+                x_out = []
+                y_out = []
+                nSamples = x.shape[0] # total number of samples
+                # We can't return more samples than there are available
+                assert args[0] <= nSamples
+                nBatch = int(nSamples / args[0])
+                for iBatch in range(nBatch):
+                    # Randomly choose args[0] indices
+                    selectedIndices = np.array(range((iBatch * args[0]), ((iBatch + 1) * args[0])))
+                    # The reshape is to avoid squeezing if only one sample is
+                    # requested
+                    x_temp = x[selectedIndices,:].reshape([args[0], x.shape[1]])
+                    y_temp = y[selectedIndices]
+                    x_out.append(x_temp)
+                    y_out.append(y_temp)
+                return x_out, y_out
             else:
                 # The fact that we put else here instead of elif type()==list
                 # allows for np.array to be used as indices as well. In general,
@@ -189,7 +242,7 @@ class _dataForClassification(_data):
             #   We compute the target label (hardmax)
             yHat = torch.argmax(yHat, dim = 1)
             #   And compute the error
-            totalErrors = torch.sum(torch.abs(yHat - y) > tol)
+            totalErrors = torch.sum(torch.abs(yHat.long() - y.long()) > tol)
             accuracy = 1 - totalErrors.type(self.dataType)/N
         else:
             yHat = np.array(yHat)
@@ -1878,7 +1931,7 @@ class TwentyNews(_dataForClassification):
 # Copied almost verbatim from the code by Michäel Defferrard, available at
 # http://github.com/mdeff/cnn_graph
 
-#import gensim
+import gensim
 import sklearn, sklearn.datasets, sklearn.metrics
 import scipy.sparse
 
