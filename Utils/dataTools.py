@@ -242,7 +242,7 @@ class _dataForClassification(_data):
             #   We compute the target label (hardmax)
             yHat = torch.argmax(yHat, dim = 1)
             #   And compute the error
-            totalErrors = torch.sum(torch.abs(yHat.long() - y.long()) > tol)
+            totalErrors = torch.sum(torch.abs(yHat - y) > tol)
             accuracy = 1 - totalErrors.type(self.dataType)/N
         else:
             yHat = np.array(yHat)

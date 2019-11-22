@@ -241,7 +241,7 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
                 yHatTrain = modelsDict[key].archit(xTrainOrdered)
 
                 # Compute loss
-                lossValueTrain = modelsDict[key].loss(yHatTrain, yTrain.long())
+                lossValueTrain = modelsDict[key].loss(yHatTrain, yTrain)
 
                 # Compute gradients
                 lossValueTrain.backward()
@@ -337,12 +337,12 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
                             
                             if iValBatch == 0:
                                 # Compute loss
-                                lossValueValid = modelsDict[key].loss(yHatValid, yValid.long()) / nValBatch
+                                lossValueValid = modelsDict[key].loss(yHatValid, yValid) / nValBatch
                                 # Compute accuracy:
                                 accValid = data.evaluate(yHatValid, yValid) / nValBatch
                             else:
                                 # Compute loss
-                                lossValueValid += modelsDict[key].loss(yHatValid, yValid.long()) / nValBatch
+                                lossValueValid += modelsDict[key].loss(yHatValid, yValid) / nValBatch
                                 # Compute accuracy:
                                 accValid += data.evaluate(yHatValid, yValid) / nValBatch
 
