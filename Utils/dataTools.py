@@ -104,7 +104,7 @@ class _data:
 
         return x, y
 
-    def getSamplesVal(self, samplesType, *args):
+    def getSamplesBatch(self, samplesType, *args):
         # type: train, valid, test
         # args: 0 args, give back all
         # args: 1 arg: if int, give that number of samples, chosen at random

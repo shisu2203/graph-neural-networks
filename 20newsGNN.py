@@ -159,7 +159,7 @@ lossFunction = nn.CrossEntropyLoss() # This applies a softmax before feeding
 
 #\\\ Overall training options
 nEpochs = 80 # Number of epochs
-batchSize = 50 # Batch size
+batchSize = 100 # Batch size
 doLearningRateDecay = False # Learning rate decay
 learningRateDecayRate = 0.9 # Rate
 learningRateDecayPeriod = 1 # How many epochs after which update the lr
@@ -652,7 +652,8 @@ for split in range(nDataSplits):
     # DATA #
     ########
 
-    xTest, yTest = data.getSamples('test')
+    xTest_all, yTest_all = data.getSamplesBatch('test',20)
+    nTestBatch = len(yTest_all)
 
     ##############
     # BEST MODEL #
@@ -664,15 +665,22 @@ for split in range(nDataSplits):
     for key in modelsGNN.keys():
         # Update order and adapt dimensions (this data has one input feature,
         # so we need to add that dimension)
-        xTestOrdered = xTest[:,modelsGNN[key].order].unsqueeze(1)
+        for iTestBatch in range(nTestBatch):
+            xTest = xTest_all[iTestBatch]
+            yTest = yTest_all[iTestBatch]
+            xTestOrdered = xTest[:,modelsGNN[key].order].unsqueeze(1)
 
-        with torch.no_grad():
-            # Process the samples
-            yHatTest = modelsGNN[key].archit(xTestOrdered)
-            # yHatTest is of shape
-            #   testSize x numberOfClasses
-            # We compute the accuracy
-            thisAccBest = data.evaluate(yHatTest, yTest)
+            with torch.no_grad():
+                # Process the samples
+                yHatTest = modelsGNN[key].archit(xTestOrdered)
+                # yHatTest is of shape
+                #   testSize x numberOfClasses
+                # We compute the accuracy
+                # thisAccBest = data.evaluate(yHatTest, yTest)
+                if iTestBatch == 0:
+                    thisAccBest = data.evaluate(yHatTest, yTest) / nTestBatch
+                else:
+                    thisAccBest += data.evaluate(yHatTest, yTest) / nTestBatch
 
         if doPrint:
             print("%s: %4.2f%%" % (key, thisAccBest * 100.), flush = True)
@@ -705,15 +713,21 @@ for split in range(nDataSplits):
     # Update order and adapt dimensions
     for key in modelsGNN.keys():
         modelsGNN[key].load(label = 'Last')
-        xTestOrdered = xTest[:,modelsGNN[key].order].unsqueeze(1)
+        for iTestBatch in range(nTestBatch):
+            xTest = xTest_all[iTestBatch]
+            yTest = yTest_all[iTestBatch]
+            xTestOrdered = xTest[:,modelsGNN[key].order].unsqueeze(1)
 
-        with torch.no_grad():
-            # Process the samples
-            yHatTest = modelsGNN[key].archit(xTestOrdered)
-            # yHatTest is of shape
-            #   testSize x numberOfClasses
-            # We compute the accuracy
-            thisAccLast = data.evaluate(yHatTest, yTest)
+            with torch.no_grad():
+                # Process the samples
+                yHatTest = modelsGNN[key].archit(xTestOrdered)
+                # yHatTest is of shape
+                #   testSize x numberOfClasses
+                # We compute the accuracy
+                if iTestBatch == 0:
+                    thisAccLast = data.evaluate(yHatTest, yTest) / nTestBatch
+                else:
+                    thisAccLast += data.evaluate(yHatTest, yTest) / nTestBatch
 
         if doPrint:
             print("%s: %4.2f%%" % (key, thisAccLast * 100), flush = True)

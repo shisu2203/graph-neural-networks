@@ -304,7 +304,7 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
 
             if (epoch * nBatches + batch) % validationInterval == 0:
                 # Validation:
-                xValid_all, yValid_all = data.getSamplesVal('valid',20)
+                xValid_all, yValid_all = data.getSamplesBatch('valid',20)
                 nValBatch = len(yValid_all)
 
                 if doPrint:
@@ -346,15 +346,15 @@ def MultipleModels(modelsDict, data, nEpochs, batchSize,
                                 # Compute accuracy:
                                 accValid += data.evaluate(yHatValid, yValid) / nValBatch
 
-                            # # Logging values
-                            # if doLogging:
-                            #     lossValidTB[key] = lossValueValid.item()
-                            #     evalValidTB[key] = accValid.item()
-                            # # Save values
-                            # if doSaveVars:
-                            #     lossValid[key] += [lossValueValid.item()]
-                            #     evalValid[key] += [accValid.item()]
-                            #     timeValid[key] += [timeElapsed]
+                    # Logging values
+                    if doLogging:
+                        lossValidTB[key] = lossValueValid.item()
+                        evalValidTB[key] = accValid.item()
+                    # Save values
+                    if doSaveVars:
+                        lossValid[key] += [lossValueValid.item()]
+                        evalValid[key] += [accValid.item()]
+                        timeValid[key] += [timeElapsed]
 
                     # Finish measuring time
                     endTime = datetime.datetime.now()
