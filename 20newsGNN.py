@@ -205,13 +205,15 @@ if doNoPooling or doCoarsening:
     
     hParamsSelGNN = {} # Hyperparameters (hParams) for the Selection GNN (SelGNN)
     hParamsSelGNN['F'] = [1, 32, 32] # Features per layer
-    hParamsSelGNN['K'] = [5, 5] # Number of filter taps per layer
+    hParamsSelGNN['K'] = [11, 11] # Number of filter taps per layer
     hParamsSelGNN['bias'] = True # Decide whether to include a bias term
     hParamsSelGNN['sigma'] = nn.ReLU # Selected nonlinearity
-    hParamsSelGNN['dimLayersMLP'] = [] # Dimension of the fully
+    hParamsSelGNN['dimLayersMLP'] = [20] # Dimension of the fully
         # connected layers after the GCN layers (the number of classes for
         # the final output will be added later), so here add any other MLP
         # besides the final readout layer
+    hParamsSelGNN['dimLayersAggMLP'] = []
+    hParamsSelGNN['maxN'] = None
         
 #\\\\\\\\\\\\
 #\\\ MODEL 1: Selection GNN with No Pooling
@@ -223,8 +225,8 @@ if doNoPooling:
 
     hParamsSelGNNnpl['name'] = 'SelGNNnpl' # Name of the architecture
 
-    hParamsSelGNNnpl['rho'] = gml.NoPool # Summarizing function
-    hParamsSelGNNnpl['alpha'] = [1, 1] # alpha-hop neighborhood that
+    hParamsSelGNNnpl['rho'] = nn.MaxPool1d # Summarizing function
+    hParamsSelGNNnpl['alpha'] = [7, 12] # alpha-hop neighborhood that
         # is affected by the summary
 
     #\\\ Save Values:
@@ -242,7 +244,7 @@ if doCoarsening:
     hParamsSelGNNcrs['name'] = 'SelGNNcrs' # Name of the architecture
     
     hParamsSelGNNcrs['rho'] = nn.MaxPool1d # Summarizing function
-    hParamsSelGNNcrs['alpha'] = [2, 2] # alpha-hop neighborhood that
+    hParamsSelGNNcrs['alpha'] = [7, 12] # alpha-hop neighborhood that
         # is affected by the summary
 
     #\\\ Save Values:
@@ -453,7 +455,7 @@ for split in range(nDataSplits):
         thisBeta2 = beta2
 
         #\\\ Ordering
-        S, order = graphTools.permIdentity(G.S/np.max(np.diag(G.E)))
+        S, order = graphTools.permEDS(G.S/np.max(np.diag(G.E)))
         # order is an np.array with the ordering of the nodes with respect
         # to the original GSO (the original GSO is kept in G.S).
 
@@ -461,20 +463,28 @@ for split in range(nDataSplits):
         # ARCHITECTURE #
         ################
 
-        thisArchit = archit.SelectionGNN(# Graph filtering
+        thisArchit = archit.AggregationGNN(# Graph filtering
                                          hParamsSelGNNnpl['F'],
                                          hParamsSelGNNnpl['K'],
                                          hParamsSelGNNnpl['bias'],
                                          # Nonlinearity
                                          hParamsSelGNNnpl['sigma'],
                                          # Pooling
-                                         hParamsSelGNNnpl['N'],
+                                         #  hParamsSelGNNnpl['N'],
                                          hParamsSelGNNnpl['rho'],
                                          hParamsSelGNNnpl['alpha'],
                                          # MLP
                                          hParamsSelGNNnpl['dimLayersMLP'],
                                          # Structure
-                                         S)
+                                         S,
+                                         maxN = hParamsSelGNNnpl['maxN'],
+                                         #Multiple node options
+                                         nNodes = 1,
+                                         dimLayersAggMLP = \
+                                          hParamsSelGNNnpl['dimLayersAggMLP'])
+
+  
+
         # This is necessary to move all the learnable parameters to be
         # stored in the device (mostly, if it's a GPU)
         thisArchit.to(device)
@@ -545,28 +555,32 @@ for split in range(nDataSplits):
         thisBeta2 = beta2
 
         #\\\ Ordering
-        S, order = graphTools.permIdentity(G.S/np.max(np.diag(G.E)))
+        S, order = graphTools.permDegree(G.S/np.max(np.diag(G.E)))
         # order is an np.array with the ordering of the nodes with respect
         # to the original GSO (the original GSO is kept in G.S).
 
         ################
         # ARCHITECTURE #
         ################
-
-        thisArchit = archit.SelectionGNN(# Graph filtering
+        thisArchit = archit.AggregationGNN(# Graph filtering
                                          hParamsSelGNNcrs['F'],
                                          hParamsSelGNNcrs['K'],
                                          hParamsSelGNNcrs['bias'],
                                          # Nonlinearity
                                          hParamsSelGNNcrs['sigma'],
                                          # Pooling
-                                         hParamsSelGNNcrs['N'],
+                                         #  hParamsSelGNNcrs['N'],
                                          hParamsSelGNNcrs['rho'],
                                          hParamsSelGNNcrs['alpha'],
                                          # MLP
                                          hParamsSelGNNcrs['dimLayersMLP'],
                                          # Structure
-                                         S, coarsening = True)
+                                         S,
+                                         maxN = hParamsSelGNNcrs['maxN'],
+                                         #Multiple node options
+                                         nNodes = 1,
+                                         dimLayersAggMLP = \
+                                          hParamsSelGNNcrs['dimLayersAggMLP'])
         # This is necessary to move all the learnable parameters to be
         # stored in the device (mostly, if it's a GPU)
         thisArchit.to(device)
