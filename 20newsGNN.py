@@ -122,7 +122,7 @@ useGPU = True # If true, and GPU is available, use it.
 
 ratioValid = 0.1 # Ratio of validation samples (out of the total training
 # samples)
-nWords = 1000 # Number of words to consider (most used words) = Number of nodes
+nWords = 2500 # Number of words to consider (most used words) = Number of nodes
 nWordsShortDocs = 5 # Docs with less than this number of words are discarded
 nEdges = 16 # Minimum number of edges per vertex in the graph
 distMetric = 'cosine' # Similarity measure between graph embedded features to
@@ -159,7 +159,7 @@ lossFunction = nn.CrossEntropyLoss() # This applies a softmax before feeding
 
 #\\\ Overall training options
 nEpochs = 80 # Number of epochs
-batchSize = 100 # Batch size
+batchSize = 30 # Batch size
 doLearningRateDecay = False # Learning rate decay
 learningRateDecayRate = 0.9 # Rate
 learningRateDecayPeriod = 1 # How many epochs after which update the lr
